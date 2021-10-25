@@ -31,7 +31,7 @@ public class CleitonBehaviour : MonoBehaviour {
 
    void BulletCollision(Collider2D col, Bullet b){
 	health -= b.Damage;
-	if(health <= 0) Destroy(gameObject);
+	if(health <= 0) state = State.Dead;
 	Destroy(b.gameObject);
 	Debug.Log("Collision");
    }
@@ -101,11 +101,30 @@ public class CleitonBehaviour : MonoBehaviour {
 
    }
 
+   bool IsWalledJ(Vector3 pos){
+        Vector2 posR = pos + new Vector3 (0.4f, 0, 0);
+        Vector2 posL = pos + new Vector3 (-0.4f, 0, 0);
+
+        float distance = 0.5f;
+        RaycastHit2D hitR = Physics2D.Raycast(posR, Vector2.right, distance, GroundLayer);
+        RaycastHit2D hitL = Physics2D.Raycast(posL, Vector2.left, distance, GroundLayer);
+        if (hitR.collider != null) {
+                if(hitR.collider.tag == "SolidPlatform") return true;
+        }
+        if (hitL.collider != null) {
+                if(hitL.collider.tag == "SolidPlatform") return true;
+        }
+
+        return false;
+
+   }
+
    public LayerMask GroundLayer;
    public GameObject BulletPrefab;
 
    public float JumpSpeed;
    public float DoubleJumpSpeed;
+   public float WallJumpSpeed;
 
    public float SpeedX;
    public float SpeedY;
@@ -141,6 +160,7 @@ public class CleitonBehaviour : MonoBehaviour {
    bool walled;
    bool hasDoubleJump;	
    bool jumpPressed;
+   bool hasWallJump;
    public int health;
 
    enum FacingStateX : byte{
@@ -158,8 +178,7 @@ public class CleitonBehaviour : MonoBehaviour {
 	NeutralGround = 0,
 	NeutralAir = 1,
 	CoyoteAir = 2,
-	WallStick = 3,
-	Dead = 4
+	Dead = 3
    }
 
    FacingStateX facingX; 
@@ -210,6 +229,10 @@ public class CleitonBehaviour : MonoBehaviour {
         }
    }
    
+   void DoWallJump(){
+	hasWallJump = false;
+        SpeedY = WallJumpSpeed;
+   }
 
    void DoDoubleJump(){
 	hasDoubleJump = false;
@@ -223,6 +246,7 @@ public class CleitonBehaviour : MonoBehaviour {
 	jumpBuffer = 0;
 	doubleJumpBuffer = 0;
 	hasDoubleJump = DJumpEnabled;
+	hasWallJump = true;
 	health = MaxHealth;
    }
    void Update(){
@@ -288,9 +312,11 @@ public class CleitonBehaviour : MonoBehaviour {
 		ApplyGravity();
 		ApplyAirAccel(h_axis_input);
 		if(jumpPressed){
-			if(hasDoubleJump){
+			if(hasWallJump && IsWalledJ(transform.position)){
+				DoWallJump();
+			}
+			else if(hasDoubleJump){
 				DoDoubleJump();
-				hasDoubleJump = false;
 			}
 			else{
 				jumpBuffer = JumpBufferFrames;
@@ -308,8 +334,8 @@ public class CleitonBehaviour : MonoBehaviour {
 		}
 		ApplyGroundAccel(h_axis_input);
 		if(DJumpEnabled) hasDoubleJump = true;
+		hasWallJump = true;
 	}
-
 	Vector2 nextPos = new Vector2(transform.position.x + SpeedX*Time.deltaTime, transform.position.y + SpeedY*Time.deltaTime);
 
 	if(!IsWalled(nextPos)) gameObject.transform.position = nextPos;
