@@ -37,12 +37,12 @@ public class CleitonBehaviour : MonoBehaviour {
    }
 
    bool IsGrounded() {
-    	Vector2 posM = transform.position + new Vector3 (0, -0.5f, 0);
-	Vector2 posR = transform.position + new Vector3 (0.5f, -0.5f, 0);
-	Vector2 posL = transform.position + new Vector3 (-0.5f, -0.5f, 0);
+    	Vector2 posM = transform.position + new Vector3 (0, -0.5f*transform.localScale.y*hitbox.size.y, 0);
+	Vector2 posR = transform.position + new Vector3 (0.5f*transform.localScale.x*hitbox.size.x, -0.5f*transform.localScale.y*hitbox.size.y, 0);
+	Vector2 posL = transform.position + new Vector3 (-0.5f*transform.localScale.x*hitbox.size.x, -0.5f*transform.localScale.y*hitbox.size.y, 0);
 
     	Vector2 direction = Vector2.down;
-    	float distance = 0.1f;
+    	float distance = 0.15f;
     	RaycastHit2D hitM = Physics2D.Raycast(posM, direction, distance, GroundLayer);
     	if (hitM.collider != null) {
         	if((hitM.collider.tag == "SolidPlatform" || hitM.collider.tag == "DropPlatform" && facingY != FacingStateY.Down) && SpeedY <= 0) return true;
@@ -59,9 +59,9 @@ public class CleitonBehaviour : MonoBehaviour {
     	return false;
     }
    bool IsCeiled(){
-	Vector2 posM = transform.position + new Vector3 (0, 0.5f, 0);
-        Vector2 posR = transform.position + new Vector3 (0.5f, 0.5f, 0);
-        Vector2 posL = transform.position + new Vector3 (-0.5f, 0.5f, 0);
+	Vector2 posM = transform.position + new Vector3 (0, 0.5f*transform.localScale.y*hitbox.size.y, 0);
+        Vector2 posR = transform.position + new Vector3 (0.5f*transform.localScale.x*hitbox.size.x, 0.5f*transform.localScale.y*hitbox.size.y, 0);
+        Vector2 posL = transform.position + new Vector3 (-0.5f*transform.localScale.x*hitbox.size.x, 0.5f*transform.localScale.y*hitbox.size.y, 0);
 
         Vector2 direction = Vector2.up;
         float distance = 0.1f;
@@ -84,8 +84,8 @@ public class CleitonBehaviour : MonoBehaviour {
    }
 
     bool IsWalled(Vector3 pos){
-        Vector2 posR = pos + new Vector3 (0.5f, 0, 0);
-	Vector2 posL = pos + new Vector3 (-0.5f, 0, 0);
+        Vector2 posR = pos + new Vector3 (0.5f*transform.localScale.x*hitbox.size.x, 0, 0);
+	Vector2 posL = pos + new Vector3 (-0.5f*transform.localScale.x*hitbox.size.x, 0, 0);
 
         float distance = 0.1f;
         RaycastHit2D hitR = Physics2D.Raycast(posR, Vector2.right, distance, GroundLayer);
@@ -102,8 +102,8 @@ public class CleitonBehaviour : MonoBehaviour {
    }
 
    bool IsWalledJ(Vector3 pos){
-        Vector2 posR = pos + new Vector3 (0.4f, 0, 0);
-        Vector2 posL = pos + new Vector3 (-0.4f, 0, 0);
+        Vector2 posR = pos + new Vector3 (0.4f*transform.localScale.x*hitbox.size.x, 0, 0);
+        Vector2 posL = pos + new Vector3 (-0.4f*transform.localScale.x*hitbox.size.x, 0, 0);
 
         float distance = 0.5f;
         RaycastHit2D hitR = Physics2D.Raycast(posR, Vector2.right, distance, GroundLayer);
@@ -152,6 +152,8 @@ public class CleitonBehaviour : MonoBehaviour {
 
    Rigidbody2D phys;
    SpriteRenderer Renderer;
+   BoxCollider2D hitbox;
+
    int jumpBuffer;
    int doubleJumpBuffer;
    int coyoteFrames;
@@ -243,6 +245,7 @@ public class CleitonBehaviour : MonoBehaviour {
 	phys = GetComponent<Rigidbody2D>();
 	Renderer = GetComponent<SpriteRenderer>();
 	GetComponent<BulletCollisionHandler>().HandlerFunction = new BulletCollisionHandler.HandlerFunctionDelegate(BulletCollision);
+	hitbox = GetComponent<BoxCollider2D>();
 	jumpBuffer = 0;
 	doubleJumpBuffer = 0;
 	hasDoubleJump = DJumpEnabled;
@@ -296,6 +299,13 @@ public class CleitonBehaviour : MonoBehaviour {
 		}
 	}
 	
+	if(facingX == FacingStateX.Left){
+		Renderer.flipX = true;
+	}
+	else{
+		Renderer.flipX = false;
+	}
+
 	jumpPressed = Input.GetButtonDown("Jump");
 	jumpBuffer = jumpPressed?JumpBufferFrames:jumpBuffer;
 
