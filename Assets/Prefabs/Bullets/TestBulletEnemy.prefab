@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3752231705005837452}
   - component: {fileID: 8338814598981438832}
   m_Layer: 0
-  m_Name: TestBullet
+  m_Name: TestBulletEnemy
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -73,7 +73,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: a8287a1f4266b9c58afd3a00757d1a3a, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0.62136114, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -95,6 +95,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68676b217cf0c793caeaf8faa97b7ca3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Damage: 3
-  Speed: 50
-  EnemyBullet: 0
+  Damage: 2
+  Speed: 5
+  EnemyBullet: 1
