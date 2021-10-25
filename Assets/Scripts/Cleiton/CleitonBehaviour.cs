@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
+[RequireComponent(typeof(BulletCollisionHandler))]
 public class CleitonBehaviour : MonoBehaviour {
 
    void SpawnBullet(){
@@ -23,8 +25,15 @@ public class CleitonBehaviour : MonoBehaviour {
 			rotation = Quaternion.Euler(0,0,180);
 		}
 	}
-	GameObject.Instantiate<TestBullet>(BulletPrefab, transform.position, rotation);
+	GameObject.Instantiate(BulletPrefab, transform.position, rotation);
 
+   }
+
+   void BulletCollision(Collider2D col, Bullet b){
+	health -= b.Damage;
+	if(health <= 0) Destroy(gameObject);
+	Destroy(b.gameObject);
+	Debug.Log("Collision");
    }
 
    bool IsGrounded() {
@@ -36,15 +45,15 @@ public class CleitonBehaviour : MonoBehaviour {
     	float distance = 0.1f;
     	RaycastHit2D hitM = Physics2D.Raycast(posM, direction, distance, GroundLayer);
     	if (hitM.collider != null) {
-        	if((hitM.collider.tag == "SolidPlatform" || hitM.collider.tag == "DropPlatform") && SpeedY <= 0 ) return true;
+        	if((hitM.collider.tag == "SolidPlatform" || hitM.collider.tag == "DropPlatform" && facingY != FacingStateY.Down) && SpeedY <= 0) return true;
     	}
 	RaycastHit2D hitR = Physics2D.Raycast(posR, direction, distance, GroundLayer);
         if (hitR.collider != null) {
-                if((hitR.collider.tag == "SolidPlatform" || hitR.collider.tag == "DropPlatform") && SpeedY <= 0 ) return true;
+                if((hitR.collider.tag == "SolidPlatform" || hitR.collider.tag == "DropPlatform" && facingY != FacingStateY.Down) && SpeedY <= 0) return true;
         }
 	RaycastHit2D hitL = Physics2D.Raycast(posL, direction, distance, GroundLayer);
         if (hitL.collider != null) {
-                if((hitL.collider.tag == "SolidPlatform" || hitL.collider.tag == "DropPlatform") && SpeedY <= 0 ) return true;
+                if((hitL.collider.tag == "SolidPlatform" || hitL.collider.tag == "DropPlatform"&& facingY != FacingStateY.Down) && SpeedY <= 0) return true;
         }
     
     	return false;
@@ -93,9 +102,10 @@ public class CleitonBehaviour : MonoBehaviour {
    }
 
    public LayerMask GroundLayer;
-   public TestBullet BulletPrefab;
+   public GameObject BulletPrefab;
 
    public float JumpSpeed;
+   public float DoubleJumpSpeed;
 
    public float SpeedX;
    public float SpeedY;
@@ -107,6 +117,7 @@ public class CleitonBehaviour : MonoBehaviour {
    public float AirFriction;
    public float GroundFriction;
 
+   public int MaxHealth;
 
    public float MaxGroundSpeed;
    public float MaxAirSpeed;
@@ -116,14 +127,21 @@ public class CleitonBehaviour : MonoBehaviour {
 
    public int CoyoteTimeFrames;
    public int JumpBufferFrames;
+   public int DJumpBufferFrames;
+   
+   public bool DJumpEnabled;
 
    Rigidbody2D phys;
    SpriteRenderer Renderer;
    int jumpBuffer;
+   int doubleJumpBuffer;
    int coyoteFrames;
    bool grounded;
    bool ceiled;
    bool walled;
+   bool hasDoubleJump;	
+   bool jumpPressed;
+   public int health;
 
    enum FacingStateX : byte{
 	Left = 0,
@@ -135,32 +153,101 @@ public class CleitonBehaviour : MonoBehaviour {
 	Up = 1,
 	Down = 2
    }
+   
+   public enum State{
+	NeutralGround = 0,
+	NeutralAir = 1,
+	CoyoteAir = 2,
+	WallStick = 3,
+	Dead = 4
+   }
 
    FacingStateX facingX; 
    FacingStateY facingY;
+   State state;
 
+   void ApplyGravity(){
+	SpeedY += AccelY;
+	if(SpeedY < MinYSpeed){
+        	SpeedY = MinYSpeed;
+        }
+   }
+
+   void ApplyGroundAccel(float haxis){
+
+	SpeedX *= GroundFriction;
+
+	SpeedX += haxis * AccelXGround;
+
+        if(SpeedX > MaxGroundSpeed){
+                SpeedX = MaxGroundSpeed;
+        }
+        else if(SpeedX < -MaxGroundSpeed){
+                SpeedX = -MaxGroundSpeed;
+        }
+   }
+
+   void ApplyAirAccel(float haxis){
+	
+	SpeedX *= AirFriction;
+
+
+	SpeedX += haxis * AccelXAir;
+
+        if(SpeedX > MaxAirSpeed){
+                SpeedX = MaxAirSpeed;
+        }
+        else if(SpeedX < -MaxAirSpeed){
+                SpeedX = -MaxAirSpeed;
+        }
+   }
+
+   void DoJump(){
+	   if(jumpBuffer > 0){
+                if(!ceiled) SpeedY = JumpSpeed;
+                jumpBuffer = 0;
+                coyoteFrames = 0;
+        }
+   }
+   
+
+   void DoDoubleJump(){
+	hasDoubleJump = false;
+        SpeedY = DoubleJumpSpeed;
+   }
 
    void Start() {
 	phys = GetComponent<Rigidbody2D>();
 	Renderer = GetComponent<SpriteRenderer>();
+	GetComponent<BulletCollisionHandler>().HandlerFunction = new BulletCollisionHandler.HandlerFunctionDelegate(BulletCollision);
 	jumpBuffer = 0;
+	doubleJumpBuffer = 0;
+	hasDoubleJump = DJumpEnabled;
+	health = MaxHealth;
    }
    void Update(){
-	
+	grounded = IsGrounded();
+        ceiled = IsCeiled();
 	if(Input.GetButtonDown("Fire1")){
 		SpawnBullet();
 	}
 	if(jumpBuffer > 0){
 		jumpBuffer--;
 	}
+	if(doubleJumpBuffer > 0){
+		doubleJumpBuffer--;
+	}
 	if(!grounded && coyoteFrames > 0){
+		state = State.CoyoteAir;
 		coyoteFrames--;
 	}
 	else if(grounded){
 		coyoteFrames = CoyoteTimeFrames;
+		state = State.NeutralGround;
 	}
-	grounded = IsGrounded();
-	ceiled = IsCeiled();
+	else{
+		state = State.NeutralAir;
+	}
 	var h_axis_input = Input.GetAxisRaw("Horizontal");
 	var v_axis_input = Input.GetAxisRaw("Vertical");
 
@@ -185,66 +272,50 @@ public class CleitonBehaviour : MonoBehaviour {
 		}
 	}
 	
+	jumpPressed = Input.GetButtonDown("Jump");
+	jumpBuffer = jumpPressed?JumpBufferFrames:jumpBuffer;
 
-	jumpBuffer = Input.GetButtonDown("Jump")?JumpBufferFrames:jumpBuffer;
-	if(grounded || coyoteFrames > 0){
-		if(grounded){ 
-			Renderer.color = Color.red;
-	//		SpeedY = 0;
-		}
-		else{
-			Renderer.color = Color.cyan;
-			SpeedY += AccelY;
-
-                	if(SpeedY < MinYSpeed){
-                        	SpeedY = MinYSpeed;
-                	}	
-		}
-
-		SpeedX += h_axis_input * AccelXGround;
-		
-		SpeedX *= GroundFriction;
-
-		if(SpeedX > MaxGroundSpeed){
-			SpeedX = MaxGroundSpeed;
-		}
-		else if(SpeedX < -MaxGroundSpeed){
-			SpeedX = -MaxGroundSpeed;
-		}
+	if(state == State.CoyoteAir){
+		ApplyGravity();
+		ApplyAirAccel(h_axis_input);
 		if(jumpBuffer > 0){
-			if(!ceiled) SpeedY = JumpSpeed;
-			jumpBuffer = 0;
-			coyoteFrames = 0;
+			DoJump();
+		}
+		if(DJumpEnabled) hasDoubleJump = true;
+	}
+
+	else if(state == State.NeutralAir){
+		ApplyGravity();
+		ApplyAirAccel(h_axis_input);
+		if(jumpPressed){
+			if(hasDoubleJump){
+				DoDoubleJump();
+				hasDoubleJump = false;
+			}
+			else{
+				jumpBuffer = JumpBufferFrames;
+			}
+		}
+		if(ceiled && SpeedY > 0){
+			SpeedY = 0;
 		}
 	}
-	else{
-		Renderer.color = Color.blue;
-		SpeedY += AccelY;
 
-		if(SpeedY < MinYSpeed){
-			SpeedY = MinYSpeed;
+	else if(state == State.NeutralGround){
+		SpeedY = 0;
+		if(jumpBuffer > 0){
+			DoJump();
 		}
-
-		SpeedX += h_axis_input * AccelXAir;
-		
-		SpeedX *= AirFriction;
-
-		if(SpeedX > MaxAirSpeed){
-			SpeedX = MaxAirSpeed;
-		}
-		else if(SpeedX < -MaxAirSpeed){
-			SpeedX = -MaxAirSpeed;
-		}
+		ApplyGroundAccel(h_axis_input);
+		if(DJumpEnabled) hasDoubleJump = true;
 	}
-	if(ceiled && SpeedY > 0){
-                        SpeedY=0;
-        }
-	Vector2 nextPos = new Vector2(transform.position.x + SpeedX, transform.position.y + SpeedY);
 
-	//if(!IsWalled(nextPos)) gameObject.transform.position = nextPos;
-	//else{ 
-	//	SpeedX = 0;
-		gameObject.transform.position = new Vector2(transform.position.x , transform.position.y + SpeedY);
-	//}
+	Vector2 nextPos = new Vector2(transform.position.x + SpeedX*Time.deltaTime, transform.position.y + SpeedY*Time.deltaTime);
+
+	if(!IsWalled(nextPos)) gameObject.transform.position = nextPos;
+	else{ 
+		SpeedX = 0;
+		gameObject.transform.position = new Vector2(transform.position.x , transform.position.y + SpeedY*Time.deltaTime);
+	}
    }
 }
