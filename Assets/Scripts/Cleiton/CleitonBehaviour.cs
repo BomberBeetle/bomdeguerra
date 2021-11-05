@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(BulletCollisionHandler))]
-public class CleitonBehaviour : MonoBehaviour {
-
-   void SpawnBullet(){
+public class CleitonBehaviour : MonoBehaviour
+{
+   void FireWeapon(){
 	Quaternion rotation;
 	if(facingY != FacingStateY.None){
 		if(facingY == FacingStateY.Down){
@@ -25,8 +25,7 @@ public class CleitonBehaviour : MonoBehaviour {
 			rotation = Quaternion.Euler(0,0,180);
 		}
 	}
-	GameObject.Instantiate(BulletPrefab, transform.position, rotation);
-
+	currentWeaponHandler.Fire(rotation);
    }
 
    void BulletCollision(Collider2D col, Bullet b){
@@ -82,7 +81,7 @@ public class CleitonBehaviour : MonoBehaviour {
         return false;
 
    }
-
+	//TODO: Add more raycasts OR substitute for a Intersetction check on the Collider2D
     bool IsWalled(Vector3 pos){
         Vector2 posR = pos + new Vector3 (0.5f*transform.localScale.x*hitbox.size.x, 0, 0);
 	Vector2 posL = pos + new Vector3 (-0.5f*transform.localScale.x*hitbox.size.x, 0, 0);
@@ -120,7 +119,10 @@ public class CleitonBehaviour : MonoBehaviour {
    }
 
    public LayerMask GroundLayer;
-   public GameObject BulletPrefab;
+   public GameObject PistolPrefab;
+   public GameObject MachinegunPrefab;
+   public GameObject ShotgunPrefab;
+   public GameObject GrenadeLauncherPrefab;
 
    public float JumpSpeed;
    public float DoubleJumpSpeed;
@@ -151,8 +153,13 @@ public class CleitonBehaviour : MonoBehaviour {
    public bool DJumpEnabled;
 
    Rigidbody2D phys;
-   SpriteRenderer Renderer;
+   SpriteRenderer sprRenderer;
    BoxCollider2D hitbox;
+
+   GameObject currentWeapon;
+   Vector3 originalWeaponTransform;
+   SpriteRenderer currentWeaponRenderer;
+   WeaponHandler currentWeaponHandler;
 
    int jumpBuffer;
    int doubleJumpBuffer;
@@ -243,20 +250,33 @@ public class CleitonBehaviour : MonoBehaviour {
 
    void Start() {
 	phys = GetComponent<Rigidbody2D>();
-	Renderer = GetComponent<SpriteRenderer>();
+	sprRenderer = GetComponent<SpriteRenderer>();
+
 	GetComponent<BulletCollisionHandler>().HandlerFunction = new BulletCollisionHandler.HandlerFunctionDelegate(BulletCollision);
+
 	hitbox = GetComponent<BoxCollider2D>();
+
 	jumpBuffer = 0;
 	doubleJumpBuffer = 0;
 	hasDoubleJump = DJumpEnabled;
 	hasWallJump = true;
 	health = MaxHealth;
+
+	currentWeapon = Instantiate(PistolPrefab, gameObject.transform);
+	originalWeaponTransform = PistolPrefab.transform.position;
+	currentWeaponRenderer = currentWeapon.GetComponent<SpriteRenderer>();
+	currentWeaponHandler = currentWeapon.GetComponent<WeaponHandler>();
    }
    void Update(){
+	if(state == State.Dead){
+		sprRenderer.color = Color.red;
+		return;
+		//oof!
+	}
 	grounded = IsGrounded();
         ceiled = IsCeiled();
 	if(Input.GetButtonDown("Fire1")){
-		SpawnBullet();
+		FireWeapon();
 	}
 	if(jumpBuffer > 0){
 		jumpBuffer--;
@@ -300,10 +320,14 @@ public class CleitonBehaviour : MonoBehaviour {
 	}
 	
 	if(facingX == FacingStateX.Left){
-		Renderer.flipX = true;
+		sprRenderer.flipX = true;
+		currentWeaponRenderer.flipX = true;
+		currentWeapon.transform.localPosition = new Vector3(originalWeaponTransform.x*-1f, originalWeaponTransform.y, originalWeaponTransform.z);
 	}
 	else{
-		Renderer.flipX = false;
+		sprRenderer.flipX = false;
+		currentWeaponRenderer.flipX = false;
+		currentWeapon.transform.localPosition = originalWeaponTransform;
 	}
 
 	jumpPressed = Input.GetButtonDown("Jump");
