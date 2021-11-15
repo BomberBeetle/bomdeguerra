@@ -45,3 +45,9 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Weps
+    uniqueID: 4288075123
+    locked: 0
+  - name: Cleito
+    uniqueID: 284242393
+    locked: 0

@@ -98,3 +98,4 @@ MonoBehaviour:
   Damage: 3
   Speed: 50
   EnemyBullet: 0
+  DespawnSeconds: 0.32

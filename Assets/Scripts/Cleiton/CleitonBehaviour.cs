@@ -8,7 +8,7 @@ public class CleitonBehaviour : MonoBehaviour
 {
    void FireWeapon(){
 	Quaternion rotation;
-	if(facingY != FacingStateY.None){
+	if(facingY != FacingStateY.None && false){ //dont let him shoot down lel
 		if(facingY == FacingStateY.Down){
 			rotation = Quaternion.Euler(0,0,270);
 		}
@@ -247,6 +247,13 @@ public class CleitonBehaviour : MonoBehaviour
 	hasDoubleJump = false;
         SpeedY = DoubleJumpSpeed;
    }
+   
+   void SwapWep(GameObject wepPrefab){
+	currentWeapon = Instantiate(wepPrefab, gameObject.transform);
+        originalWeaponTransform = wepPrefab.transform.position;
+        currentWeaponRenderer = currentWeapon.GetComponent<SpriteRenderer>();
+        currentWeaponHandler = currentWeapon.GetComponent<WeaponHandler>();
+   } 
 
    void Start() {
 	phys = GetComponent<Rigidbody2D>();
@@ -262,10 +269,7 @@ public class CleitonBehaviour : MonoBehaviour
 	hasWallJump = true;
 	health = MaxHealth;
 
-	currentWeapon = Instantiate(PistolPrefab, gameObject.transform);
-	originalWeaponTransform = PistolPrefab.transform.position;
-	currentWeaponRenderer = currentWeapon.GetComponent<SpriteRenderer>();
-	currentWeaponHandler = currentWeapon.GetComponent<WeaponHandler>();
+	SwapWep(ShotgunPrefab);
    }
    void Update(){
 	if(state == State.Dead){
@@ -301,13 +305,16 @@ public class CleitonBehaviour : MonoBehaviour
 	if(v_axis_input != 0){
 		if(v_axis_input > 0){
 			facingY = FacingStateY.Up; 
+	//		currentWeapon.transform.localRotation = Quaternion.Euler(0,0,270);
 		}
 		else if(v_axis_input < 0){
 			facingY = FacingStateY.Down;
+	//		currentWeapon.transform.localRotation = Quaternion.Euler(0,0,90);
 		}
 	}
 	else{
 		facingY = FacingStateY.None;
+	//	currentWeapon.transform.localRotation = Quaternion.Euler(0,0,0);
 	}
 	
 	if(h_axis_input != 0){

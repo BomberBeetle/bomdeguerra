@@ -8,16 +8,28 @@ public class Bullet : MonoBehaviour
     public int Damage;
     public float Speed;
     public bool EnemyBullet;
+    public float DespawnSeconds;
+
     SpriteRenderer _renderer;
+    float despawnTimer;
+
+
     // Start is called before the first frame update
     void Start()
     {  
 	    _renderer = GetComponent<SpriteRenderer>();
+	    despawnTimer = DespawnSeconds;
     }
 
     // Update is called once per frame
+    // this is sphagoot
     void Update()
     {
+	despawnTimer -= Time.deltaTime;
+	if(despawnTimer <= 0f){
+		Destroy(gameObject);
+		return;
+	}
         transform.position = new Vector2(transform.position.x + (float)Math.Cos(transform.rotation.eulerAngles.z * Math.PI/180)*Speed*Time.deltaTime, transform.position.y + (float)Math.Sin(transform.rotation.eulerAngles.z * Math.PI/180)*Speed*Time.deltaTime);
 	Vector2 posR = transform.position + new Vector3(0,0, 0);
 
