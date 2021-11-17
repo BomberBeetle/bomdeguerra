@@ -269,7 +269,7 @@ public class CleitonBehaviour : MonoBehaviour
 	hasWallJump = true;
 	health = MaxHealth;
 
-	SwapWep(ShotgunPrefab);
+	SwapWep(MachinegunPrefab);
    }
    void Update(){
 	if(state == State.Dead){
@@ -279,7 +279,7 @@ public class CleitonBehaviour : MonoBehaviour
 	}
 	grounded = IsGrounded();
         ceiled = IsCeiled();
-	if(Input.GetButtonDown("Fire1")){
+	if(Input.GetButton("Fire1")){
 		FireWeapon();
 	}
 	if(jumpBuffer > 0){

@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(WeaponHandler))]
-public class Pistol : MonoBehaviour
+public class Machinegun : MonoBehaviour
 {
 
     public GameObject BulletPrefab;
+    public float FiringInterval;
     bool fired;
     bool firedPrev;
+    float firingTimer;
     Quaternion rotation;
 
     void Fire(Quaternion rotation){
@@ -26,15 +28,22 @@ public class Pistol : MonoBehaviour
 	wh.Fire = Fire;
 	firedPrev = false;
 	fired = false;
+	firingTimer = FiringInterval;
     }
 
     // Update is called once per frame
     void LateUpdate()
     {
-	if(!firedPrev&&fired){
-		GameObject.Instantiate(BulletPrefab, transform.position + new Vector3(0, 0.2f, 0), rotation);
+	if(fired){
+	 firingTimer -= Time.deltaTime;
 	}
+	if(!firedPrev&&fired || fired && firingTimer <= 0){
+		GameObject.Instantiate(BulletPrefab, transform.position + new Vector3(0, 0.2f, 0), rotation);
+		firingTimer = FiringInterval;
+	}
+
 	firedPrev = fired;
 	fired = false;
+
     }
 }
